@@ -1,0 +1,2 @@
+#!/bin/bash
+pgrep Messages > /dev/null 2> /dev/null && killall Messages || true
