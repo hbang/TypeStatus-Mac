@@ -2,15 +2,27 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleExecutable</key>
+	<string>TypeStatus</string>
 	<key>CFBundleIdentifier</key>
 	<string>ws.hbang.typestatus.mac</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>TypeStatus</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0b2</string>
+	<key>CFBundleVersion</key>
+	<string>1.0</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>10.8</string>
 	<key>SIMBLTargetApplications</key>
 	<array>
 		<dict>
 			<key>BundleIdentifier</key>
 			<string>com.apple.iChat</string>
 			<key>MinBundleVersion</key>
-			<string>3315</string>
+			<string>3103</string>
 		</dict>
 	</array>
 </dict>

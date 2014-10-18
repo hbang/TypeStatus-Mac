@@ -1,11 +1,14 @@
-TARGET = macosx:clang:10.8:10.7
+TARGET = macosx:clang:10.8:10.8
+ARCHS = x86_64
 
 include theos/makefiles/common.mk
 
 BUNDLE_NAME = TypeStatus
-TypeStatus_FILES = HBTypeStatusMac.m Tweak.xm
+TypeStatus_FILES = Tweak.xm
 TypeStatus_INSTALL_PATH = $(HOME)/Library/Application Support/SIMBL/Plugins
 TypeStatus_FRAMEWORKS = Cocoa AppKit CoreGraphics
+TypeStatus_PRIVATE_FRAMEWORKS = IMCore
+TypeStatus_LOGOSFLAGS = -c generator=internal
 
 include $(THEOS_MAKE_PATH)/bundle.mk
 
@@ -20,6 +23,6 @@ after-install::
 release: stage
 	rm -rf release || true
 	mkdir release
-	cp -r obj/TypeStatus.bundle release/TypeStatus.bundle
-	cp ReleaseDS_Store release/.DS_Store
-	cp background.png release/.background.png
+	cp stuff/How\ to\ Install\ EasySIMBL.webloc release
+	rsync -rav obj/macosx/TypeStatus.bundle release/TypeStatus.bundle
+	dropdmg --config-name=tsmac obj/macosx/TypeStatus.bundle

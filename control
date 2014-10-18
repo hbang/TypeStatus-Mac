@@ -1,7 +1,7 @@
 Package: ws.hbang.typestatus.mac
 Name: TypeStatus
 Version: 0.0.1
-Architecture:
+Architecture: darwin-amd64
 Description: iMessage typing indicator in status bar
 Maintainer: HASHBANG Productions <typestatus@hbang.ws>
 Author: HASHBANG Productions <typestatus@hbang.ws>
