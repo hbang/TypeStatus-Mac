@@ -46,24 +46,12 @@ NSString *HBTSNameForHandle(NSString *address) {
 #pragma mark - Status item stuff
 
 void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
-	switch (type) {
-		case HBTSStatusBarTypeTyping:
-			statusItem.image = typingIcon;
-			break;
-
-		case HBTSStatusBarTypeRead:
-			statusItem.image = readIcon;
-			break;
-
-		case HBTSStatusBarTypeEmpty:
-			statusItem.length = 0;
-			statusItem.title = nil;
-			statusItem.attributedTitle = nil;
-			return;
-			break;
+	if (type == HBTSStatusBarTypeEmpty) {
+		statusItem.length = 0;
+		statusItem.title = nil;
+		statusItem.attributedTitle = nil;
+		return;
 	}
-
-	statusItem.length = -1;
 
 	NSString *name = HBTSNameForHandle(handle);
 
@@ -75,6 +63,21 @@ void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
 			NSForegroundColorAttributeName: [NSColor colorWithCalibratedWhite:inverted ? 0.7490196078f : 0 alpha:1]
 		}] autorelease];
 	}
+
+	switch (type) {
+		case HBTSStatusBarTypeTyping:
+			statusItem.image = typingIcon;
+			break;
+
+		case HBTSStatusBarTypeRead:
+			statusItem.image = readIcon;
+			break;
+
+		case HBTSStatusBarTypeEmpty:
+			break;
+	}
+
+	statusItem.length = -1;
 }
 
 #pragma mark - Typing detection
