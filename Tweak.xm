@@ -177,17 +177,17 @@ void HBTSCheckUpdate() {
 	NSString *currentVersion = bundle.infoDictionary[@"CFBundleShortVersionString"];
 
 	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-		NSData *data = [NSURLConnection sendSynchronousRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"http://cdn.hbang.ws/updates/typestatusmac.json?version=%@", currentVersion]] cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:30] returningResponse:nil error:nil];
+		NSData *data = [NSURLConnection sendSynchronousRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"https://cdn.hbang.ws/updates/typestatusmac.json?version=%@", currentVersion]] cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:30] returningResponse:nil error:nil];
 
 		if (!data || !data.length) {
-			NSLog(@"update check failed - no data received");
+			NSLog(@"TypeStatus: update check failed - no data received");
 			return;
 		}
 
 		NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:nil];
 
 		if (!json) {
-			NSLog(@"json deserialization failed");
+			NSLog(@"TypeStatus: json deserialization failed");
 			return;
 		}
 
