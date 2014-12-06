@@ -3,6 +3,7 @@
 #import <IMCore/IMHandle.h>
 #import <IMCore/IMServiceImpl.h>
 #import <IMFoundation/FZMessage.h>
+#import <version.h>
 
 NSString *prefsPath;
 NSBundle *bundle;
@@ -56,16 +57,24 @@ void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
 
 		case HBTSStatusBarTypeEmpty:
 			statusItem.length = 0;
+			statusItem.title = nil;
 			statusItem.attributedTitle = nil;
 			return;
 			break;
 	}
 
 	statusItem.length = -1;
-	statusItem.attributedTitle = [[[NSAttributedString alloc] initWithString:HBTSNameForHandle(handle) attributes:@{
-		NSFontAttributeName: [NSFont menuBarFontOfSize:0],
-		NSForegroundColorAttributeName: [NSColor colorWithCalibratedWhite:inverted ? 0.7490196078f : 0 alpha:1]
-	}] autorelease];
+
+	NSString *name = HBTSNameForHandle(handle);
+
+	if (IS_OSX_OR_NEWER(10_10)) {
+		statusItem.title = name; // It Just Works(tm)
+	} else {
+		statusItem.attributedTitle = [[[NSAttributedString alloc] initWithString:name attributes:@{
+			NSFontAttributeName: [NSFont menuBarFontOfSize:0],
+			NSForegroundColorAttributeName: [NSColor colorWithCalibratedWhite:inverted ? 0.7490196078f : 0 alpha:1]
+		}] autorelease];
+	}
 }
 
 #pragma mark - Typing detection
@@ -98,7 +107,6 @@ void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
 
 %end
 
-
 %hook FZMessage
 
 - (void)setTimeRead:(NSDate *)timeRead {
@@ -123,12 +131,16 @@ void HBTSShowFirstRunAlert() {
 	NSAlert *alert = [[[NSAlert alloc] init] autorelease];
 	alert.messageText = @"Welcome to TypeStatus";
 	alert.informativeText = @"This is a preview of TypeStatus for Mac. Please send bug reports and feedback to support@hbang.ws.";
-	alert.showsSuppressionButton = YES;
-	alert.suppressionButton.title = @"I use a dark menu bar theme";
+
+	if (!IS_OSX_OR_NEWER(10_10)) {
+		alert.showsSuppressionButton = YES;
+		alert.suppressionButton.title = @"I use a dark menu bar theme";
+	}
+
 	[alert runModal];
 
 	[@{
-		kHBTSPrefsLastVersion: @"1.0~beta2",
+		kHBTSPrefsLastVersion: bundle.infoDictionary[@"CFBundleShortVersionString"],
 		kHBTSPrefsInvertedKey: @(alert.suppressionButton.state == NSOnState)
 	} writeToFile:prefsPath atomically:YES];
 
@@ -143,13 +155,15 @@ void HBTSLoadPrefs() {
 	[typingIcon release];
 	[readIcon release];
 
-	inverted = GET_BOOL(kHBTSPrefsInvertedKey, NO);
+	inverted = IS_OSX_OR_NEWER(10_10) ? NO : GET_BOOL(kHBTSPrefsInvertedKey, NO);
 	duration = GET_FLOAT(kHBTSPrefsDurationKey, 5);
 
 	typingIcon = [[bundle imageForResource:inverted ? @"TypingInverted.png" : @"Typing.png"] retain];
-	readIcon = [[bundle imageForResource:inverted ? @"ReadInverted.png" : @"Read.png"] retain];
-
+	[typingIcon setTemplate:YES]; // eugh. dot notation doesn't work for this.
 	typingIcon.size = CGSizeMake(22.f, 22.f);
+
+	readIcon = [[bundle imageForResource:inverted ? @"ReadInverted.png" : @"Read.png"] retain];
+	[typingIcon setTemplate:YES];
 	readIcon.size = CGSizeMake(22.f, 22.f);
 
 	if (!prefs) {
