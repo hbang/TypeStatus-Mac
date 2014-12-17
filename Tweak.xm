@@ -5,16 +5,11 @@
 #import <IMFoundation/FZMessage.h>
 #import <version.h>
 
-NSString *prefsPath;
 NSBundle *bundle;
 NSStatusItem *statusItem;
-NSImage *typingIcon;
-NSImage *readIcon;
+NSUserDefaults *userDefaults;
 
 NSUInteger typingIndicators = 0;
-
-BOOL inverted = NO;
-NSTimeInterval duration = 0;
 
 #pragma mark - Constants
 
@@ -24,9 +19,10 @@ typedef NS_ENUM(NSUInteger, HBTSStatusBarType) {
 	HBTSStatusBarTypeEmpty
 };
 
-static NSString *const kHBTSPrefsLastVersion = @"LastVersion";
-static NSString *const kHBTSPrefsInvertedKey = @"Inverted";
-static NSString *const kHBTSPrefsDurationKey = @"OverlayDuration";
+static NSString *const kHBTSPreferencesSuiteName = @"ws.hbang.typestatusmac";
+static NSString *const kHBTSPreferencesLastVersionKey = @"LastVersion";
+static NSString *const kHBTSPreferencesInvertedKey = @"Inverted";
+static NSString *const kHBTSPreferencesDurationKey = @"OverlayDuration";
 
 static NSTimeInterval const kHBTSTypingTimeout = 60;
 
@@ -46,6 +42,29 @@ NSString *HBTSNameForHandle(NSString *address) {
 #pragma mark - Status item stuff
 
 void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
+	static NSImage *TypingIcon;
+	static NSImage *TypingIconInverted;
+	static NSImage *ReadIcon;
+	static NSImage *ReadIconInverted;
+	static dispatch_once_t onceToken;
+	dispatch_once(&onceToken, ^{
+		TypingIcon = [[bundle imageForResource:@"Typing.png"] retain];
+		[TypingIcon setTemplate:YES]; // eugh. dot notation doesn't work for this.
+		TypingIcon.size = CGSizeMake(22.f, 22.f);
+
+		ReadIcon = [[bundle imageForResource:@"Read.png"] retain];
+		[ReadIcon setTemplate:YES];
+		ReadIcon.size = CGSizeMake(22.f, 22.f);
+
+		if (!IS_OSX_OR_NEWER(10_10)) {
+			TypingIconInverted = [[bundle imageForResource:@"TypingInverted.png"] retain];
+			TypingIconInverted.size = CGSizeMake(22.f, 22.f);
+
+			ReadIconInverted = [[bundle imageForResource:@"ReadInverted.png"] retain];
+			ReadIconInverted.size = CGSizeMake(22.f, 22.f);
+		}
+	});
+
 	if (type == HBTSStatusBarTypeEmpty) {
 		statusItem.length = 0;
 		statusItem.title = nil;
@@ -53,6 +72,7 @@ void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
 		return;
 	}
 
+	BOOL inverted = !IS_OSX_OR_NEWER(10_10) [userDefaults boolForKey:kHBTSPrefsInvertedKey];
 	NSString *name = HBTSNameForHandle(handle);
 
 	if (IS_OSX_OR_NEWER(10_10)) {
@@ -66,11 +86,11 @@ void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
 
 	switch (type) {
 		case HBTSStatusBarTypeTyping:
-			statusItem.image = typingIcon;
+			statusItem.image = inverted ? TypingIconInverted : TypingIcon;
 			break;
 
 		case HBTSStatusBarTypeRead:
-			statusItem.image = readIcon;
+			statusItem.image = inverted ? ReadIconInverted : ReadIcon;
 			break;
 
 		case HBTSStatusBarTypeEmpty:
@@ -128,8 +148,6 @@ void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
 
 #pragma mark - First run
 
-void HBTSLoadPrefs();
-
 void HBTSShowFirstRunAlert() {
 	NSAlert *alert = [[[NSAlert alloc] init] autorelease];
 	alert.messageText = @"Welcome to TypeStatus";
@@ -142,36 +160,8 @@ void HBTSShowFirstRunAlert() {
 
 	[alert runModal];
 
-	[@{
-		kHBTSPrefsLastVersion: bundle.infoDictionary[@"CFBundleShortVersionString"],
-		kHBTSPrefsInvertedKey: @(alert.suppressionButton.state == NSOnState)
-	} writeToFile:prefsPath atomically:YES];
-
-	HBTSLoadPrefs();
-}
-
-#pragma mark - Preferences
-
-void HBTSLoadPrefs() {
-	NSDictionary *prefs = [NSDictionary dictionaryWithContentsOfFile:prefsPath];
-
-	[typingIcon release];
-	[readIcon release];
-
-	inverted = IS_OSX_OR_NEWER(10_10) ? NO : GET_BOOL(kHBTSPrefsInvertedKey, NO);
-	duration = GET_FLOAT(kHBTSPrefsDurationKey, 5);
-
-	typingIcon = [[bundle imageForResource:inverted ? @"TypingInverted.png" : @"Typing.png"] retain];
-	[typingIcon setTemplate:YES]; // eugh. dot notation doesn't work for this.
-	typingIcon.size = CGSizeMake(22.f, 22.f);
-
-	readIcon = [[bundle imageForResource:inverted ? @"ReadInverted.png" : @"Read.png"] retain];
-	[typingIcon setTemplate:YES];
-	readIcon.size = CGSizeMake(22.f, 22.f);
-
-	if (!prefs) {
-		HBTSShowFirstRunAlert();
-	}
+	[userDefaults setObject:bundle.infoDictionary[@"CFBundleVersion"] forKey:kHBTSPrefsLastVersion];
+	[userDefaults setBool:alert.suppressionButton.state == NSOnState forKey:kHBTSPrefsInvertedKey];
 }
 
 #pragma mark - Updates
@@ -215,11 +205,19 @@ void HBTSCheckUpdate() {
 %ctor {
 	%init;
 
-	prefsPath = [[NSHomeDirectory() stringByAppendingPathComponent:@"Library/Preferences/ws.hbang.typestatusmac.plist"] retain];
 	bundle = [[NSBundle bundleWithIdentifier:@"ws.hbang.typestatus.mac"] retain];
-
 	statusItem = [[[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength] retain];
+	userDefaults = [[NSUserDefaults alloc] initWithSuiteName:kHBTSPreferencesSuiteName];
+	[userDefaults registerDefaults:@{
+		kHBTSPrefsDurationKey: @5,
+		kHBTSPrefsInvertedKey: @NO
+	}]
 
 	HBTSLoadPrefs();
+
+	if (![userDefaults objectForKey:kHBTSPrefsLastVersionKey]) {
+		HBTSShowFirstRunAlert();
+	}
+
 	HBTSCheckUpdate();
 }
