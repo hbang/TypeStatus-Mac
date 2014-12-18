@@ -1,3 +1,0 @@
-#!/bin/bash
-rm -rf /Users/*/Library/Containers/com.apple.iChat/Data/Library/Application\ Support/SIMBL
-pgrep Messages > /dev/null 2> /dev/null && killall Messages || true
