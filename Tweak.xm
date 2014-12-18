@@ -72,7 +72,7 @@ void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
 		return;
 	}
 
-	BOOL inverted = !IS_OSX_OR_NEWER(10_10) && [userDefaults boolForKey:kHBTSPrefsInvertedKey];
+	BOOL inverted = !IS_OSX_OR_NEWER(10_10) && [userDefaults boolForKey:kHBTSPreferencesInvertedKey];
 	NSString *name = HBTSNameForHandle(handle);
 
 	if (IS_OSX_OR_NEWER(10_10)) {
@@ -138,7 +138,7 @@ void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
 	if (!self.sender && [[NSDate date] timeIntervalSinceDate:self.timeRead] < 1) {
 		HBTSSetStatus(HBTSStatusBarTypeRead, self.handle);
 
-		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(duration * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)([userDefaults doubleForKey:kHBTSPreferencesDurationKey] * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
 			HBTSSetStatus(HBTSStatusBarTypeEmpty, nil);
 		});
 	}
@@ -160,8 +160,8 @@ void HBTSShowFirstRunAlert() {
 
 	[alert runModal];
 
-	[userDefaults setObject:bundle.infoDictionary[@"CFBundleVersion"] forKey:kHBTSPrefsLastVersion];
-	[userDefaults setBool:alert.suppressionButton.state == NSOnState forKey:kHBTSPrefsInvertedKey];
+	[userDefaults setObject:bundle.infoDictionary[@"CFBundleVersion"] forKey:kHBTSPreferencesLastVersionKey];
+	[userDefaults setBool:alert.suppressionButton.state == NSOnState forKey:kHBTSPreferencesInvertedKey];
 }
 
 #pragma mark - Updates
@@ -209,13 +209,11 @@ void HBTSCheckUpdate() {
 	statusItem = [[[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength] retain];
 	userDefaults = [[NSUserDefaults alloc] initWithSuiteName:kHBTSPreferencesSuiteName];
 	[userDefaults registerDefaults:@{
-		kHBTSPrefsDurationKey: @5,
-		kHBTSPrefsInvertedKey: @NO
-	}]
+		kHBTSPreferencesDurationKey: @5.0,
+		kHBTSPreferencesInvertedKey: @NO
+	}];
 
-	HBTSLoadPrefs();
-
-	if (![userDefaults objectForKey:kHBTSPrefsLastVersionKey]) {
+	if (![userDefaults objectForKey:kHBTSPreferencesLastVersionKey]) {
 		HBTSShowFirstRunAlert();
 	}
 
