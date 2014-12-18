@@ -72,7 +72,7 @@ void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
 		return;
 	}
 
-	BOOL inverted = !IS_OSX_OR_NEWER(10_10) [userDefaults boolForKey:kHBTSPrefsInvertedKey];
+	BOOL inverted = !IS_OSX_OR_NEWER(10_10) && [userDefaults boolForKey:kHBTSPrefsInvertedKey];
 	NSString *name = HBTSNameForHandle(handle);
 
 	if (IS_OSX_OR_NEWER(10_10)) {
