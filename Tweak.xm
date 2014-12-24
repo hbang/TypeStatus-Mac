@@ -48,19 +48,19 @@ void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
 	static NSImage *ReadIconInverted;
 	static dispatch_once_t onceToken;
 	dispatch_once(&onceToken, ^{
-		TypingIcon = [[bundle imageForResource:@"Typing.png"] retain];
+		TypingIcon = [[bundle imageForResource:@"Typing.tiff"] retain];
 		[TypingIcon setTemplate:YES]; // eugh. dot notation doesn't work for this.
 		TypingIcon.size = CGSizeMake(22.f, 22.f);
 
-		ReadIcon = [[bundle imageForResource:@"Read.png"] retain];
+		ReadIcon = [[bundle imageForResource:@"Read.tiff"] retain];
 		[ReadIcon setTemplate:YES];
 		ReadIcon.size = CGSizeMake(22.f, 22.f);
 
 		if (!IS_OSX_OR_NEWER(10_10)) {
-			TypingIconInverted = [[bundle imageForResource:@"TypingInverted.png"] retain];
+			TypingIconInverted = [[bundle imageForResource:@"TypingInverted.tiff"] retain];
 			TypingIconInverted.size = CGSizeMake(22.f, 22.f);
 
-			ReadIconInverted = [[bundle imageForResource:@"ReadInverted.png"] retain];
+			ReadIconInverted = [[bundle imageForResource:@"ReadInverted.tiff"] retain];
 			ReadIconInverted.size = CGSizeMake(22.f, 22.f);
 		}
 	});
