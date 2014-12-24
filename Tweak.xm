@@ -39,6 +39,18 @@ NSString *HBTSNameForHandle(NSString *address) {
 	return handle._displayNameWithAbbreviation ?: address;
 }
 
+#pragma mark - Tint image
+
+NSImage *HBTSTintImageWithColor(NSImage *image, NSColor *color) {
+	// https://stackoverflow.com/a/16138027/709376
+	NSImage *newImage = [[image copy] autorelease];
+	[newImage lockFocus];
+	[color set];
+	NSRectFillUsingOperation((NSRect){ NSZeroPoint, newImage.size }, NSCompositeSourceAtop);
+	[newImage unlockFocus];
+	return newImage;
+}
+
 #pragma mark - Status item stuff
 
 void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
@@ -57,11 +69,8 @@ void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
 		ReadIcon.size = CGSizeMake(22.f, 22.f);
 
 		if (!IS_OSX_OR_NEWER(10_10)) {
-			TypingIconInverted = [[bundle imageForResource:@"TypingInverted.tiff"] retain];
-			TypingIconInverted.size = CGSizeMake(22.f, 22.f);
-
-			ReadIconInverted = [[bundle imageForResource:@"ReadInverted.tiff"] retain];
-			ReadIconInverted.size = CGSizeMake(22.f, 22.f);
+			TypingIconInverted = [HBTSTintImageWithColor(TypingIcon, [NSColor whiteColor]) retain];
+			ReadIconInverted = [HBTSTintImageWithColor(ReadIcon, [NSColor whiteColor]) retain];
 		}
 	});
 
