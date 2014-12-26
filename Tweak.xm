@@ -160,7 +160,7 @@ void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
 void HBTSShowFirstRunAlert() {
 	NSAlert *alert = [[[NSAlert alloc] init] autorelease];
 	alert.messageText = @"Welcome to TypeStatus";
-	alert.informativeText = @"This is a preview of TypeStatus for Mac. Please send bug reports and feedback to support@hbang.ws.";
+	alert.informativeText = @"You’ll now see subtle notifications in your menu bar when someone is typing an iMessage to you or reads an iMessage you sent.\nIf you like TypeStatus, don’t forget to let your friends know about it!";
 
 	if (!IS_OSX_OR_NEWER(10_10)) {
 		alert.showsSuppressionButton = YES;
