@@ -173,48 +173,12 @@ void HBTSShowFirstRunAlert() {
 	[userDefaults setBool:alert.suppressionButton.state == NSOnState forKey:kHBTSPreferencesInvertedKey];
 }
 
-#pragma mark - Updates
-
-void HBTSCheckUpdate() {
-	NSString *currentVersion = bundle.infoDictionary[@"CFBundleShortVersionString"];
-
-	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-		NSData *data = [NSURLConnection sendSynchronousRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"https://cdn.hbang.ws/updates/typestatusmac.json?version=%@", currentVersion]] cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:30] returningResponse:nil error:nil];
-
-		if (!data || !data.length) {
-			NSLog(@"TypeStatus: update check failed - no data received");
-			return;
-		}
-
-		NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:nil];
-
-		if (!json) {
-			NSLog(@"TypeStatus: json deserialization failed");
-			return;
-		}
-
-		if (![json[@"version"] isEqualToString:currentVersion]) {
-			dispatch_async(dispatch_get_main_queue(), ^{
-				NSAlert *alert = [[[NSAlert alloc] init] autorelease];
-				alert.messageText = @"A TypeStatus update is available";
-				alert.informativeText = [NSString stringWithFormat:@"The new version is %@. You have version %@.", json[@"version"], currentVersion];
-				[alert addButtonWithTitle:@"Install"];
-				[alert addButtonWithTitle:@"No Thanks"];
-
-				if ([alert runModal] == NSAlertFirstButtonReturn) {
-					[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:json[@"url"]]];
-				}
-			});
-		}
-	});
-}
-
 #pragma mark - Constructor
 
 %ctor {
 	%init;
 
-	bundle = [[NSBundle bundleWithIdentifier:@"ws.hbang.typestatus.mac"] retain];
+	bundle = [[NSBundle bundleWithPath:@"/Library/Application Support/TypeStatusResources.bundle"] retain];
 	statusItem = [[[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength] retain];
 	userDefaults = [[NSUserDefaults alloc] initWithSuiteName:kHBTSPreferencesSuiteName];
 	[userDefaults registerDefaults:@{
@@ -225,6 +189,4 @@ void HBTSCheckUpdate() {
 	if (![userDefaults objectForKey:kHBTSPreferencesLastVersionKey]) {
 		HBTSShowFirstRunAlert();
 	}
-
-	HBTSCheckUpdate();
 }
