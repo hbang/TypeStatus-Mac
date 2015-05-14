@@ -52,6 +52,7 @@ static BOOL isDNDActive() {
 static void setStatus(HBTSStatusBarType type, NSString *handle, NSString *guid) {
 	static NSImage *TypingIcon;
 	static NSImage *ReadIcon;
+	static NSImage *EmptyIcon;
 	static dispatch_once_t onceToken;
 	dispatch_once(&onceToken, ^{
 		TypingIcon = [bundle imageForResource:@"Typing.tiff"];
@@ -61,13 +62,16 @@ static void setStatus(HBTSStatusBarType type, NSString *handle, NSString *guid) 
 		ReadIcon = [bundle imageForResource:@"Read.tiff"];
 		[ReadIcon setTemplate:YES];
 		ReadIcon.size = CGSizeMake(22.f, 22.f);
+
+		EmptyIcon = [bundle imageForResource:@"Empty.tiff"];
+		[EmptyIcon setTemplate:YES];
+		EmptyIcon.size = CGSizeMake(22.f, 22.f);
 	});
 
 	// if this is an empty alert (notification ended), or DND is active, clear out the item and return
 	if (type == HBTSStatusBarTypeEmpty || isDNDActive()) {
-		statusItem.length = 0;
+		statusItem.image = EmptyIcon;
 		statusItem.title = nil;
-		statusItem.attributedTitle = nil;
 		currentSenderGUID = nil;
 		return;
 	}
@@ -92,10 +96,9 @@ static void setStatus(HBTSStatusBarType type, NSString *handle, NSString *guid) 
 		guid = [NSString stringWithFormat:@"iMessage;-;%@", handle];
 	}
 
-	// set all our parameters. length -1 means auto-size
+	// set all our parameters
 	currentSenderGUID = guid;
 	statusItem.title = nameForHandle(handle);
-	statusItem.length = -1;
 }
 
 #pragma mark - Click handler
@@ -108,7 +111,7 @@ static void setStatus(HBTSStatusBarType type, NSString *handle, NSString *guid) 
 
 + (void)statusBarItemClicked {
 	NSURLComponents *url = [NSURLComponents componentsWithString:@"ichat:openchat"];
-	url.queryItems = @[ [NSURLQueryItem queryItemWithName:@"guid" value:currentSenderGUID] ];
+	url.queryItems = currentSenderGUID ? @[ [NSURLQueryItem queryItemWithName:@"guid" value:currentSenderGUID] ] : nil;
 	[[NSWorkspace sharedWorkspace] openURL:url.URL];
 }
 
@@ -178,6 +181,9 @@ static void setStatus(HBTSStatusBarType type, NSString *handle, NSString *guid) 
 	currentSenderGUID = nil;
 
 	statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
+	statusItem.length = -1; // auto size
 	statusItem.button.target = HBTSStatusBarHandler.class;
 	statusItem.button.action = @selector(statusBarItemClicked);
+
+	setStatus(HBTSStatusBarTypeEmpty, nil, nil);
 }
