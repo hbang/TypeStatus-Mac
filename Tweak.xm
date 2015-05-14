@@ -58,6 +58,8 @@ void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
 	static NSImage *TypingIconInverted;
 	static NSImage *ReadIcon;
 	static NSImage *ReadIconInverted;
+	static NSImage *EmptyIcon;
+	static NSImage *EmptyIconInverted;
 	static dispatch_once_t onceToken;
 	dispatch_once(&onceToken, ^{
 		TypingIcon = [[bundle imageForResource:@"Typing.tiff"] retain];
@@ -68,20 +70,27 @@ void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
 		[ReadIcon setTemplate:YES];
 		ReadIcon.size = CGSizeMake(22.f, 22.f);
 
+		EmptyIcon = [[bundle imageForResource:@"Empty.tiff"] retain];
+		[EmptyIcon setTemplate:YES];
+		EmptyIcon.size = CGSizeMake(22.f, 22.f);
+
 		if (!IS_OSX_OR_NEWER(10_10)) {
 			TypingIconInverted = [HBTSTintImageWithColor(TypingIcon, [NSColor whiteColor]) retain];
 			ReadIconInverted = [HBTSTintImageWithColor(ReadIcon, [NSColor whiteColor]) retain];
+			EmptyIconInverted = [HBTSTintImageWithColor(EmptyIcon, [NSColor whiteColor]) retain];
 		}
 	});
 
+	BOOL inverted = !IS_OSX_OR_NEWER(10_10) && [userDefaults boolForKey:kHBTSPreferencesInvertedKey];
+
 	if (type == HBTSStatusBarTypeEmpty) {
-		statusItem.length = 0;
+		statusItem.length = -1;
 		statusItem.title = nil;
 		statusItem.attributedTitle = nil;
+		statusItem.image = inverted ? EmptyIconInverted : EmptyIcon;
 		return;
 	}
 
-	BOOL inverted = !IS_OSX_OR_NEWER(10_10) && [userDefaults boolForKey:kHBTSPreferencesInvertedKey];
 	NSString *name = HBTSNameForHandle(handle);
 
 	if (IS_OSX_OR_NEWER(10_10)) {
@@ -173,12 +182,48 @@ void HBTSShowFirstRunAlert() {
 	[userDefaults setBool:alert.suppressionButton.state == NSOnState forKey:kHBTSPreferencesInvertedKey];
 }
 
+#pragma mark - Updates
+
+void HBTSCheckUpdate() {
+	NSString *currentVersion = bundle.infoDictionary[@"CFBundleShortVersionString"];
+
+	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+		NSData *data = [NSURLConnection sendSynchronousRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"https://cdn.hbang.ws/updates/typestatusmac.json?version=%@", currentVersion]] cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:30] returningResponse:nil error:nil];
+
+		if (!data || !data.length) {
+			NSLog(@"TypeStatus: update check failed - no data received");
+			return;
+		}
+
+		NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:nil];
+
+		if (!json) {
+			NSLog(@"TypeStatus: json deserialization failed");
+			return;
+		}
+
+		if (![json[@"version"] isEqualToString:currentVersion]) {
+			dispatch_async(dispatch_get_main_queue(), ^{
+				NSAlert *alert = [[[NSAlert alloc] init] autorelease];
+				alert.messageText = @"A TypeStatus update is available";
+				alert.informativeText = [NSString stringWithFormat:@"The new version is %@. You have version %@.", json[@"version"], currentVersion];
+				[alert addButtonWithTitle:@"Install"];
+				[alert addButtonWithTitle:@"No Thanks"];
+
+				if ([alert runModal] == NSAlertFirstButtonReturn) {
+					[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:json[@"url"]]];
+				}
+			});
+		}
+	});
+}
+
 #pragma mark - Constructor
 
 %ctor {
 	%init;
 
-	bundle = [[NSBundle bundleWithPath:@"/Library/Application Support/TypeStatusResources.bundle"] retain];
+	bundle = [[NSBundle bundleWithIdentifier:@"ws.hbang.typestatus.mac"] retain];
 	statusItem = [[[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength] retain];
 	userDefaults = [[NSUserDefaults alloc] initWithSuiteName:kHBTSPreferencesSuiteName];
 	[userDefaults registerDefaults:@{
@@ -189,4 +234,6 @@ void HBTSShowFirstRunAlert() {
 	if (![userDefaults objectForKey:kHBTSPreferencesLastVersionKey]) {
 		HBTSShowFirstRunAlert();
 	}
+	HBTSSetStatus(HBTSStatusBarTypeEmpty, nil);
+	HBTSCheckUpdate();
 }
