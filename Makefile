@@ -1,14 +1,14 @@
 TARGET = macosx:clang:10.8:latest
-ARCHS = x86_64
 
 include theos/makefiles/common.mk
 
-SIMBLTWEAK_NAME = TypeStatus
+BUNDLE_NAME = TypeStatus
 TypeStatus_FILES = Tweak.xm
-TypeStatus_FRAMEWORKS = Cocoa AppKit CoreGraphics
+TypeStatus_INSTALL_PATH = /Library/Parasite/Extensions
+TypeStatus_FRAMEWORKS = AppKit Cocoa CoreGraphics
 TypeStatus_PRIVATE_FRAMEWORKS = IMCore
 
-include $(THEOS_MAKE_PATH)/simbltweak.mk
+include $(THEOS_MAKE_PATH)/bundle.mk
 
 release: stage
 	rm -rf release || true
