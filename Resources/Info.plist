@@ -16,7 +16,7 @@
 	<string>3</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>10.8</string>
-	<key>OPFilters</key>
+	<key>PSFilters</key>
 	<dict>
 		<key>Bundles</key>
 		<array>
