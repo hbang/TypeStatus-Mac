@@ -62,11 +62,11 @@ void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
 	dispatch_once(&onceToken, ^{
 		TypingIcon = [[bundle imageForResource:@"Typing.tiff"] retain];
 		[TypingIcon setTemplate:YES]; // eugh. dot notation doesn't work for this.
-		TypingIcon.size = CGSizeMake(22.f, 22.f);
+		TypingIcon.size = NSMakeSize(22.f, 22.f);
 
 		ReadIcon = [[bundle imageForResource:@"Read.tiff"] retain];
 		[ReadIcon setTemplate:YES];
-		ReadIcon.size = CGSizeMake(22.f, 22.f);
+		ReadIcon.size = NSMakeSize(22.f, 22.f);
 
 		if (!IS_OSX_OR_NEWER(10_10)) {
 			TypingIconInverted = [HBTSTintImageWithColor(TypingIcon, [NSColor whiteColor]) retain];
