@@ -40,6 +40,15 @@ static NSString *nameForHandle(NSString *address) {
 	return handle._displayNameWithAbbreviation ?: address;
 }
 
+#pragma mark - DND support
+
+static BOOL isDNDActive() {
+	// the notification center do not disturb state is stored in NotificationCenterUI’s prefs
+	CFTypeRef value = CFPreferencesCopyValue(CFSTR("doNotDisturb"), CFSTR("com.apple.notificationcenterui"), kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+	NSNumber *objcValue = (NSNumber *)CFBridgingRelease(value);
+	return objcValue && objcValue.boolValue;
+}
+
 #pragma mark - Status item stuff
 
 static void setStatus(HBTSStatusBarType type, NSString *handle) {
@@ -56,7 +65,8 @@ static void setStatus(HBTSStatusBarType type, NSString *handle) {
 		ReadIcon.size = CGSizeMake(22.f, 22.f);
 	});
 
-	if (type == HBTSStatusBarTypeEmpty) {
+	// if this is an empty alert (notification ended), or DND is active, clear out the item and return
+	if (type == HBTSStatusBarTypeEmpty || isDNDActive()) {
 		statusItem.length = 0;
 		statusItem.title = nil;
 		statusItem.attributedTitle = nil;
