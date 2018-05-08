@@ -1,6 +1,5 @@
 @import Cocoa;
-
-static NSUserDefaults *userDefaults;
+#import "HBTSPreferences.h"
 
 #pragma mark - First run
 
@@ -15,8 +14,7 @@ static void showFirstRunAlert() {
 
 static void checkUpdate() {
 	NSBundle *bundle = [NSBundle bundleWithIdentifier:@"ws.hbang.typestatus.mac"];
-
-	[userDefaults setObject:bundle.infoDictionary[@"CFBundleVersion"] forKey:kHBTSPreferencesLastVersionKey];
+	[HBTSPreferences sharedInstance].lastVersion = bundle.infoDictionary[@"CFBundleVersion"];
 
 	NSString *currentVersion = bundle.infoDictionary[@"CFBundleShortVersionString"];
 	NSString *messagesVersion = [NSBundle mainBundle].infoDictionary[@"CFBundleVersion"];
@@ -61,9 +59,7 @@ static void checkUpdate() {
 #pragma mark - Constructor
 
 %ctor {
-	userDefaults = [[NSUserDefaults alloc] initWithSuiteName:kHBTSPreferencesSuiteName];
-
-	if (![userDefaults objectForKey:kHBTSPreferencesLastVersionKey]) {
+	if (![HBTSPreferences sharedInstance].lastVersion) {
 		showFirstRunAlert();
 	}
 

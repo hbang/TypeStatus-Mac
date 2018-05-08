@@ -1,4 +1,5 @@
 @import Cocoa;
+#import "HBTSPreferences.h"
 #import <IMCore/IMAccount.h>
 #import <IMCore/IMChat.h>
 #import <IMCore/IMHandle.h>
@@ -6,9 +7,19 @@
 #import <IMFoundation/FZMessage.h>
 #import <version.h>
 
+typedef NS_ENUM(NSUInteger, HBTSStatusBarType) {
+	HBTSStatusBarTypeTyping,
+	HBTSStatusBarTypeRead,
+	HBTSStatusBarTypeEmpty
+};
+
+static NSTimeInterval const kHBTSTypingTimeout = 60;
+
+#pragma mark - Variables
+
 static NSBundle *bundle;
+static HBTSPreferences *preferences;
 static NSStatusItem *statusItem;
-static NSUserDefaults *userDefaults;
 
 static NSUInteger typingIndicators = 0;
 static NSMutableSet *acknowledgedReadReceipts;
@@ -148,7 +159,7 @@ static void setStatus(HBTSStatusBarType type, NSString *handle, NSString *guid) 
 
 	// if we got one, do our timeout to unset the alert
 	if (hasRead) {
-		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)([userDefaults doubleForKey:kHBTSPreferencesDurationKey] * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(preferences.displayDuration * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
 			setStatus(HBTSStatusBarTypeEmpty, nil, nil);
 		});
 	}
@@ -162,14 +173,9 @@ static void setStatus(HBTSStatusBarType type, NSString *handle, NSString *guid) 
 	%init;
 
 	bundle = [NSBundle bundleWithIdentifier:@"ws.hbang.typestatus.mac"];
+	preferences = [HBTSPreferences sharedInstance];
 	acknowledgedReadReceipts = [NSMutableSet set];
 	currentSenderGUID = nil;
-
-	userDefaults = [[NSUserDefaults alloc] initWithSuiteName:kHBTSPreferencesSuiteName];
-	[userDefaults registerDefaults:@{
-		kHBTSPreferencesDurationKey: @5.0,
-		kHBTSPreferencesInvertedKey: @NO
-	}];
 
 	statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
 	statusItem.button.target = HBTSStatusBarHandler.class;
