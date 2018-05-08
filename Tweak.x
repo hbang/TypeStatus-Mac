@@ -43,7 +43,7 @@ NSString *HBTSNameForHandle(NSString *address) {
 
 NSImage *HBTSTintImageWithColor(NSImage *image, NSColor *color) {
 	// https://stackoverflow.com/a/16138027/709376
-	NSImage *newImage = [[image copy] autorelease];
+	NSImage *newImage = [image copy];
 	[newImage lockFocus];
 	[color set];
 	NSRectFillUsingOperation((NSRect){ NSZeroPoint, newImage.size }, NSCompositeSourceAtop);
@@ -60,17 +60,17 @@ void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
 	static NSImage *ReadIconInverted;
 	static dispatch_once_t onceToken;
 	dispatch_once(&onceToken, ^{
-		TypingIcon = [[bundle imageForResource:@"Typing.tiff"] retain];
+		TypingIcon = [bundle imageForResource:@"Typing.tiff"];
 		[TypingIcon setTemplate:YES]; // eugh. dot notation doesn't work for this.
 		TypingIcon.size = CGSizeMake(22.f, 22.f);
 
-		ReadIcon = [[bundle imageForResource:@"Read.tiff"] retain];
+		ReadIcon = [bundle imageForResource:@"Read.tiff"];
 		[ReadIcon setTemplate:YES];
 		ReadIcon.size = CGSizeMake(22.f, 22.f);
 
 		if (!IS_OSX_OR_NEWER(10_10)) {
-			TypingIconInverted = [HBTSTintImageWithColor(TypingIcon, [NSColor whiteColor]) retain];
-			ReadIconInverted = [HBTSTintImageWithColor(ReadIcon, [NSColor whiteColor]) retain];
+			TypingIconInverted = HBTSTintImageWithColor(TypingIcon, [NSColor whiteColor]);
+			ReadIconInverted = HBTSTintImageWithColor(ReadIcon, [NSColor whiteColor]);
 		}
 	});
 
@@ -87,10 +87,10 @@ void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
 	if (IS_OSX_OR_NEWER(10_10)) {
 		statusItem.title = name; // It Just Works(tm)
 	} else {
-		statusItem.attributedTitle = [[[NSAttributedString alloc] initWithString:name attributes:@{
+		statusItem.attributedTitle = [[NSAttributedString alloc] initWithString:name attributes:@{
 			NSFontAttributeName: [NSFont menuBarFontOfSize:0],
 			NSForegroundColorAttributeName: [NSColor colorWithCalibratedWhite:inverted ? 0.7490196078f : 0 alpha:1]
-		}] autorelease];
+		}];
 	}
 
 	switch (type) {
@@ -158,7 +158,7 @@ void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
 #pragma mark - First run
 
 void HBTSShowFirstRunAlert() {
-	NSAlert *alert = [[[NSAlert alloc] init] autorelease];
+	NSAlert *alert = [[NSAlert alloc] init];
 	alert.messageText = @"Welcome to TypeStatus";
 	alert.informativeText = @"You’ll now see subtle notifications in your menu bar when someone is typing an iMessage to you or reads an iMessage you sent.\nIf you like TypeStatus, don’t forget to let your friends know about it!";
 
@@ -195,7 +195,7 @@ void HBTSCheckUpdate() {
 
 		if (![json[@"version"] isEqualToString:currentVersion]) {
 			dispatch_async(dispatch_get_main_queue(), ^{
-				NSAlert *alert = [[[NSAlert alloc] init] autorelease];
+				NSAlert *alert = [[NSAlert alloc] init];
 				alert.messageText = @"A TypeStatus update is available";
 				alert.informativeText = [NSString stringWithFormat:@"The new version is %@. You have version %@.", json[@"version"], currentVersion];
 				[alert addButtonWithTitle:@"Install"];
@@ -214,8 +214,8 @@ void HBTSCheckUpdate() {
 %ctor {
 	%init;
 
-	bundle = [[NSBundle bundleWithIdentifier:@"ws.hbang.typestatus.mac"] retain];
-	statusItem = [[[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength] retain];
+	bundle = [NSBundle bundleWithIdentifier:@"ws.hbang.typestatus.mac"];
+	statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
 	userDefaults = [[NSUserDefaults alloc] initWithSuiteName:kHBTSPreferencesSuiteName];
 	[userDefaults registerDefaults:@{
 		kHBTSPreferencesDurationKey: @5.0,

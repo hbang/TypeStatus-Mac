@@ -1,6 +1,8 @@
 export TARGET = macosx:clang:latest:10.8
 export ARCHS = x86_64
 
+export ADDITIONAL_CFLAGS = -fobjc-arc
+
 include $(THEOS)/makefiles/common.mk
 
 SIMBLTWEAK_NAME = TypeStatus
