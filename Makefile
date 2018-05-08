@@ -1,13 +1,13 @@
 export TARGET = macosx:clang:latest:10.11
 export ARCHS = x86_64
 
-export ADDITIONAL_CFLAGS = -fobjc-arc
+export ADDITIONAL_CFLAGS = -fobjc-arc -include Global.h
 
 include $(THEOS)/makefiles/common.mk
 
 SIMBLTWEAK_NAME = TypeStatus
 
-TypeStatus_FILES = Tweak.x
+TypeStatus_FILES = $(wildcard *.x)
 TypeStatus_FRAMEWORKS = Cocoa AppKit CoreGraphics
 TypeStatus_PRIVATE_FRAMEWORKS = IMCore
 

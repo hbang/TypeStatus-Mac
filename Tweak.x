@@ -14,21 +14,6 @@ static NSUInteger typingIndicators = 0;
 static NSMutableSet *acknowledgedReadReceipts;
 static NSString *currentSenderGUID;
 
-#pragma mark - Constants
-
-typedef NS_ENUM(NSUInteger, HBTSStatusBarType) {
-	HBTSStatusBarTypeTyping,
-	HBTSStatusBarTypeRead,
-	HBTSStatusBarTypeEmpty
-};
-
-static NSString *const kHBTSPreferencesSuiteName = @"ws.hbang.typestatusmac";
-static NSString *const kHBTSPreferencesLastVersionKey = @"LastVersion";
-static NSString *const kHBTSPreferencesInvertedKey = @"Inverted";
-static NSString *const kHBTSPreferencesDurationKey = @"OverlayDuration";
-
-static NSTimeInterval const kHBTSTypingTimeout = 60;
-
 #pragma mark - Contact names
 
 static NSString *nameForHandle(NSString *address) {
@@ -169,55 +154,6 @@ static void setStatus(HBTSStatusBarType type, NSString *handle, NSString *guid) 
 
 %end
 
-#pragma mark - First run
-
-static void showFirstRunAlert() {
-	NSAlert *alert = [[NSAlert alloc] init];
-	alert.messageText = @"Welcome to TypeStatus";
-	alert.informativeText = @"You’ll now see subtle notifications in your menu bar when someone is typing an iMessage to you or reads an iMessage you sent.\nIf you like TypeStatus, don’t forget to let your friends know about it!";
-
-	[alert runModal];
-
-	[userDefaults setObject:bundle.infoDictionary[@"CFBundleVersion"] forKey:kHBTSPreferencesLastVersionKey];
-	[userDefaults setBool:alert.suppressionButton.state == NSOnState forKey:kHBTSPreferencesInvertedKey];
-}
-
-#pragma mark - Updates
-
-static void checkUpdate() {
-	NSString *currentVersion = bundle.infoDictionary[@"CFBundleShortVersionString"];
-
-	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-		NSData *data = [NSURLConnection sendSynchronousRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"https://cdn.hbang.ws/updates/typestatusmac.json?version=%@", currentVersion]] cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:30] returningResponse:nil error:nil];
-
-		if (!data || !data.length) {
-			NSLog(@"TypeStatus: update check failed - no data received");
-			return;
-		}
-
-		NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:kNilOptions error:nil];
-
-		if (!json) {
-			NSLog(@"TypeStatus: json deserialization failed");
-			return;
-		}
-
-		if (![json[@"version"] isEqualToString:currentVersion]) {
-			dispatch_async(dispatch_get_main_queue(), ^{
-				NSAlert *alert = [[NSAlert alloc] init];
-				alert.messageText = @"A TypeStatus update is available";
-				alert.informativeText = [NSString stringWithFormat:@"The new version is %@. You have version %@.", json[@"version"], currentVersion];
-				[alert addButtonWithTitle:@"Install"];
-				[alert addButtonWithTitle:@"No Thanks"];
-
-				if ([alert runModal] == NSAlertFirstButtonReturn) {
-					[[NSWorkspace sharedWorkspace] openURL:[NSURL URLWithString:json[@"url"]]];
-				}
-			});
-		}
-	});
-}
-
 #pragma mark - Constructor
 
 %ctor {
@@ -236,10 +172,4 @@ static void checkUpdate() {
 	statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
 	statusItem.button.target = HBTSStatusBarHandler.class;
 	statusItem.button.action = @selector(statusBarItemClicked);
-
-	if (![userDefaults objectForKey:kHBTSPreferencesLastVersionKey]) {
-		showFirstRunAlert();
-	}
-
-	checkUpdate();
 }
