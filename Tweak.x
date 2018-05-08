@@ -139,7 +139,7 @@ static void setStatus(HBTSStatusBarType type, NSString *handle, NSString *guid) 
 	// loop over the updated messages. if we see one that isRead and hasn’t yet been seen, add it to
 	// our set and show an alert
 	for (FZMessage *message in messages) {
-		if (message.isRead && ![acknowledgedReadReceipts containsObject:message.guid]) {
+		if (message.isSent && message.isRead && ![acknowledgedReadReceipts containsObject:message.guid]) {
 			hasRead = YES;
 			[acknowledgedReadReceipts addObject:message.guid];
 			setStatus(HBTSStatusBarTypeRead, message.handle, chat.guid);
