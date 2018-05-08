@@ -5,11 +5,12 @@
 #import <IMFoundation/FZMessage.h>
 #import <version.h>
 
-NSBundle *bundle;
-NSStatusItem *statusItem;
-NSUserDefaults *userDefaults;
+static NSBundle *bundle;
+static NSStatusItem *statusItem;
+static NSUserDefaults *userDefaults;
 
-NSUInteger typingIndicators = 0;
+static NSUInteger typingIndicators = 0;
+static NSMutableSet *acknowledgedReadReceipts;
 
 #pragma mark - Constants
 
@@ -28,7 +29,7 @@ static NSTimeInterval const kHBTSTypingTimeout = 60;
 
 #pragma mark - Contact names
 
-NSString *HBTSNameForHandle(NSString *address) {
+static NSString *nameForHandle(NSString *address) {
 	IMAccount *account = IMPreferredSendingAccountForAddressesWithFallbackService(@[ address ], [IMServiceImpl iMessageService]);
 
 	if (!account._isUsableForSending) {
@@ -41,13 +42,13 @@ NSString *HBTSNameForHandle(NSString *address) {
 
 #pragma mark - Status item stuff
 
-void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
+static void setStatus(HBTSStatusBarType type, NSString *handle) {
 	static NSImage *TypingIcon;
 	static NSImage *ReadIcon;
 	static dispatch_once_t onceToken;
 	dispatch_once(&onceToken, ^{
 		TypingIcon = [bundle imageForResource:@"Typing.tiff"];
-		[TypingIcon setTemplate:YES]; // eugh. dot notation doesn't work for this.
+		[TypingIcon setTemplate:YES]; // eugh. dot notation doesn’t work for this
 		TypingIcon.size = CGSizeMake(22.f, 22.f);
 
 		ReadIcon = [bundle imageForResource:@"Read.tiff"];
@@ -108,16 +109,20 @@ void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
 	}
 }
 
-%end
-
-%hook FZMessage
-
-- (void)setTimeRead:(NSDate *)timeRead {
+- (void)_account:(id)arg1 chat:(id)arg2 style:(unsigned char)arg3 chatProperties:(id)arg4 messagesUpdated:(NSArray <FZMessage *> *)messages {
 	%orig;
 
-	if (!self.sender && [[NSDate date] timeIntervalSinceDate:self.timeRead] < 1) {
-		HBTSSetStatus(HBTSStatusBarTypeRead, self.handle);
+	BOOL hasRead = NO;
 
+	for (FZMessage *message in messages) {
+		if (message.isRead && ![acknowledgedReadReceipts containsObject:message.guid]) {
+			hasRead = YES;
+			[acknowledgedReadReceipts addObject:message.guid];
+			HBTSSetStatus(HBTSStatusBarTypeRead, message.handle);
+		}
+	}
+
+	if (hasRead) {
 		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)([userDefaults doubleForKey:kHBTSPreferencesDurationKey] * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
 			HBTSSetStatus(HBTSStatusBarTypeEmpty, nil);
 		});
@@ -128,7 +133,7 @@ void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
 
 #pragma mark - First run
 
-void HBTSShowFirstRunAlert() {
+static void showFirstRunAlert() {
 	NSAlert *alert = [[NSAlert alloc] init];
 	alert.messageText = @"Welcome to TypeStatus";
 	alert.informativeText = @"You’ll now see subtle notifications in your menu bar when someone is typing an iMessage to you or reads an iMessage you sent.\nIf you like TypeStatus, don’t forget to let your friends know about it!";
@@ -141,7 +146,7 @@ void HBTSShowFirstRunAlert() {
 
 #pragma mark - Updates
 
-void HBTSCheckUpdate() {
+static void checkUpdate() {
 	NSString *currentVersion = bundle.infoDictionary[@"CFBundleShortVersionString"];
 
 	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
@@ -181,16 +186,19 @@ void HBTSCheckUpdate() {
 	%init;
 
 	bundle = [NSBundle bundleWithIdentifier:@"ws.hbang.typestatus.mac"];
-	statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
+	acknowledgedReadReceipts = [NSMutableSet set];
+
 	userDefaults = [[NSUserDefaults alloc] initWithSuiteName:kHBTSPreferencesSuiteName];
 	[userDefaults registerDefaults:@{
 		kHBTSPreferencesDurationKey: @5.0,
 		kHBTSPreferencesInvertedKey: @NO
 	}];
 
+	statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
+
 	if (![userDefaults objectForKey:kHBTSPreferencesLastVersionKey]) {
-		HBTSShowFirstRunAlert();
+		showFirstRunAlert();
 	}
 
-	HBTSCheckUpdate();
+	checkUpdate();
 }
