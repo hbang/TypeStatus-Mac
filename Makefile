@@ -8,7 +8,6 @@ include $(THEOS)/makefiles/common.mk
 SIMBLTWEAK_NAME = TypeStatus
 
 TypeStatus_FILES = $(wildcard *.x) $(wildcard *.m)
-TypeStatus_FRAMEWORKS = Cocoa AppKit CoreGraphics
 TypeStatus_PRIVATE_FRAMEWORKS = IMCore
 
 include $(THEOS_MAKE_PATH)/simbltweak.mk
