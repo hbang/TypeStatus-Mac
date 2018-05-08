@@ -1,10 +1,11 @@
-TARGET = macosx:clang:10.8:latest
-ARCHS = x86_64
+export TARGET = macosx:clang:latest:10.8
+export ARCHS = x86_64
 
-include theos/makefiles/common.mk
+include $(THEOS)/makefiles/common.mk
 
 SIMBLTWEAK_NAME = TypeStatus
-TypeStatus_FILES = Tweak.xm
+
+TypeStatus_FILES = Tweak.x
 TypeStatus_FRAMEWORKS = Cocoa AppKit CoreGraphics
 TypeStatus_PRIVATE_FRAMEWORKS = IMCore
 

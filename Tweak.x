@@ -116,7 +116,7 @@ void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
 - (void)_processMessageForAccount:(id)account chat:(id)chat style:(unsigned char)style chatProperties:(id)properties message:(FZMessage *)message {
 	%orig;
 
-	if (message.flags == 4104) {
+	if (message.flags == (IMMessageItemFlags)4104) {
 		typingIndicators++;
 
 		HBTSSetStatus(HBTSStatusBarTypeTyping, message.handle);
