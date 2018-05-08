@@ -4,6 +4,8 @@
 <dict>
 	<key>CFBundleExecutable</key>
 	<string>TypeStatus</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon.icns</string>
 	<key>CFBundleIdentifier</key>
 	<string>ws.hbang.typestatus.mac</string>
 	<key>CFBundleInfoDictionaryVersion</key>

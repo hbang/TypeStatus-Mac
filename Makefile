@@ -13,6 +13,11 @@ TypeStatus_PRIVATE_FRAMEWORKS = IMCore
 
 include $(THEOS_MAKE_PATH)/simbltweak.mk
 
+after-TypeStatus-all:: Resources/AppIcon.icns
+
+Resources/AppIcon.icns: stuff/AppIcon.iconset
+	$(ECHO_COMPILING)iconutil --convert icns --output $@ $<$(ECHO_END)
+
 release: stage
 	rm -rf release || true
 	mkdir release
