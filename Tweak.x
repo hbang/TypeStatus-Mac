@@ -87,6 +87,8 @@ static void setStatus(HBTSStatusBarType type, NSString *handle, NSString *guid) 
 	statusItem.length = -1;
 }
 
+#pragma mark - Click handler
+
 @interface HBTSStatusBarHandler : NSObject
 
 @end
