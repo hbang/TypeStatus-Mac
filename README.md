@@ -1,4 +1,11 @@
 # TypeStatus for Mac
-Probably the only OS X/SIMBL tweak made with Theos/Logos? A lot of the build process is hacky, and a lot of it is manual work. One day it will be better, but for now it works...
+iMessage typing and read receipt indicators in the macOS menu bar. https://typestatus.com/
 
-Licensed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0.html).
+See also: [TypeStatus for iOS](https://github.com/hbang/TypeStatus).
+
+(Probably the only macOS/SIMBL tweak made with Theos/Logos?)
+
+## License
+Licensed under the Apache License, version 2.0. Refer to [LICENSE.md](LICENSE.md).
+
+See [About.plist](https://github.com/hbang/TypeStatus/blob/master/prefs/Resources/About.plist) and our [Translations](https://hbang.ws/translations/) page for credits.
