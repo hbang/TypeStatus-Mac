@@ -1,0 +1,6 @@
+#!/bin/bash
+osascript -e 'tell app "Messages" to quit' || :
+
+if ! osascript -e 'tell app "Finder" to get application file id "org.w0lf.mySIMBL"' >/dev/null 2>&1; then
+	open "https://hbang.ws/go/simbl"
+fi
