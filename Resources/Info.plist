@@ -22,7 +22,7 @@
 			<key>BundleIdentifier</key>
 			<string>com.apple.iChat</string>
 			<key>MinBundleVersion</key>
-			<string>5500</string>
+			<string>5000</string>
 		</dict>
 	</array>
 </dict>
