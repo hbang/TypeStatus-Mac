@@ -1,4 +1,4 @@
-export TARGET = macosx:clang:latest:10.10
+export TARGET = macosx:clang:latest:10.11
 export ARCHS = x86_64
 
 export ADDITIONAL_CFLAGS = -fobjc-arc
