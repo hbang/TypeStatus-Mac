@@ -62,10 +62,6 @@ static void checkUpdate() {
 
 %ctor {
 	userDefaults = [[NSUserDefaults alloc] initWithSuiteName:kHBTSPreferencesSuiteName];
-	[userDefaults registerDefaults:@{
-		kHBTSPreferencesDurationKey: @5.0,
-		kHBTSPreferencesInvertedKey: @NO
-	}];
 
 	if (![userDefaults objectForKey:kHBTSPreferencesLastVersionKey]) {
 		showFirstRunAlert();
