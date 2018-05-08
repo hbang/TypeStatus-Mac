@@ -39,25 +39,11 @@ NSString *HBTSNameForHandle(NSString *address) {
 	return handle._displayNameWithAbbreviation ?: address;
 }
 
-#pragma mark - Tint image
-
-NSImage *HBTSTintImageWithColor(NSImage *image, NSColor *color) {
-	// https://stackoverflow.com/a/16138027/709376
-	NSImage *newImage = [image copy];
-	[newImage lockFocus];
-	[color set];
-	NSRectFillUsingOperation((NSRect){ NSZeroPoint, newImage.size }, NSCompositeSourceAtop);
-	[newImage unlockFocus];
-	return newImage;
-}
-
 #pragma mark - Status item stuff
 
 void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
 	static NSImage *TypingIcon;
-	static NSImage *TypingIconInverted;
 	static NSImage *ReadIcon;
-	static NSImage *ReadIconInverted;
 	static dispatch_once_t onceToken;
 	dispatch_once(&onceToken, ^{
 		TypingIcon = [bundle imageForResource:@"Typing.tiff"];
@@ -67,11 +53,6 @@ void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
 		ReadIcon = [bundle imageForResource:@"Read.tiff"];
 		[ReadIcon setTemplate:YES];
 		ReadIcon.size = CGSizeMake(22.f, 22.f);
-
-		if (!IS_OSX_OR_NEWER(10_10)) {
-			TypingIconInverted = HBTSTintImageWithColor(TypingIcon, [NSColor whiteColor]);
-			ReadIconInverted = HBTSTintImageWithColor(ReadIcon, [NSColor whiteColor]);
-		}
 	});
 
 	if (type == HBTSStatusBarTypeEmpty) {
@@ -81,25 +62,15 @@ void HBTSSetStatus(HBTSStatusBarType type, NSString *handle) {
 		return;
 	}
 
-	BOOL inverted = !IS_OSX_OR_NEWER(10_10) && [userDefaults boolForKey:kHBTSPreferencesInvertedKey];
-	NSString *name = HBTSNameForHandle(handle);
-
-	if (IS_OSX_OR_NEWER(10_10)) {
-		statusItem.title = name; // It Just Works(tm)
-	} else {
-		statusItem.attributedTitle = [[NSAttributedString alloc] initWithString:name attributes:@{
-			NSFontAttributeName: [NSFont menuBarFontOfSize:0],
-			NSForegroundColorAttributeName: [NSColor colorWithCalibratedWhite:inverted ? 0.7490196078f : 0 alpha:1]
-		}];
-	}
+	statusItem.title = HBTSNameForHandle(handle);
 
 	switch (type) {
 		case HBTSStatusBarTypeTyping:
-			statusItem.image = inverted ? TypingIconInverted : TypingIcon;
+			statusItem.image = TypingIcon;
 			break;
 
 		case HBTSStatusBarTypeRead:
-			statusItem.image = inverted ? ReadIconInverted : ReadIcon;
+			statusItem.image = ReadIcon;
 			break;
 
 		case HBTSStatusBarTypeEmpty:
@@ -161,11 +132,6 @@ void HBTSShowFirstRunAlert() {
 	NSAlert *alert = [[NSAlert alloc] init];
 	alert.messageText = @"Welcome to TypeStatus";
 	alert.informativeText = @"You’ll now see subtle notifications in your menu bar when someone is typing an iMessage to you or reads an iMessage you sent.\nIf you like TypeStatus, don’t forget to let your friends know about it!";
-
-	if (!IS_OSX_OR_NEWER(10_10)) {
-		alert.showsSuppressionButton = YES;
-		alert.suppressionButton.title = @"I use a dark menu bar theme";
-	}
 
 	[alert runModal];
 
