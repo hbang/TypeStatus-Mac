@@ -18,7 +18,7 @@ after-TypeStatus-all:: Resources/icon.icns
 Resources/icon.icns: stuff/icon.iconset
 	$(ECHO_COMPILING)iconutil --convert icns --output $@ $<$(ECHO_END)
 
-after-stage::
+before-install::
 	$(ECHO_SIGNING)codesign --sign "Developer ID Application" $(THEOS_STAGING_DIR)/Library/Application\ Support/SIMBL/Plugins/TypeStatus.bundle$(ECHO_END)
 
 after-install::
