@@ -1,5 +1,6 @@
-#import <AppKit/AppKit.h>
+@import Cocoa;
 #import <IMCore/IMAccount.h>
+#import <IMCore/IMChat.h>
 #import <IMCore/IMHandle.h>
 #import <IMCore/IMServiceImpl.h>
 #import <IMFoundation/FZMessage.h>
@@ -11,6 +12,7 @@ static NSUserDefaults *userDefaults;
 
 static NSUInteger typingIndicators = 0;
 static NSMutableSet *acknowledgedReadReceipts;
+static NSString *currentSenderGUID;
 
 #pragma mark - Constants
 
@@ -51,7 +53,7 @@ static BOOL isDNDActive() {
 
 #pragma mark - Status item stuff
 
-static void setStatus(HBTSStatusBarType type, NSString *handle) {
+static void setStatus(HBTSStatusBarType type, NSString *handle, NSString *guid) {
 	static NSImage *TypingIcon;
 	static NSImage *ReadIcon;
 	static dispatch_once_t onceToken;
@@ -70,11 +72,11 @@ static void setStatus(HBTSStatusBarType type, NSString *handle) {
 		statusItem.length = 0;
 		statusItem.title = nil;
 		statusItem.attributedTitle = nil;
+		currentSenderGUID = nil;
 		return;
 	}
 
-	statusItem.title = HBTSNameForHandle(handle);
-
+	// set the appropriate icon
 	switch (type) {
 		case HBTSStatusBarTypeTyping:
 			statusItem.image = TypingIcon;
@@ -88,23 +90,46 @@ static void setStatus(HBTSStatusBarType type, NSString *handle) {
 			break;
 	}
 
+	if (!guid) {
+		// if the guid is nil, just take a guess
+		// TODO: this could be smarter?
+		guid = [NSString stringWithFormat:@"iMessage;-;%@", handle];
+	}
+
+	// set all our parameters. length -1 means auto-size
+	currentSenderGUID = guid;
+	statusItem.title = nameForHandle(handle);
 	statusItem.length = -1;
 }
+
+@interface HBTSStatusBarHandler : NSObject
+
+@end
+
+@implementation HBTSStatusBarHandler
+
++ (void)statusBarItemClicked {
+	NSURLComponents *url = [NSURLComponents componentsWithString:@"ichat:openchat"];
+	url.queryItems = @[ [NSURLQueryItem queryItemWithName:@"guid" value:currentSenderGUID] ];
+	[[NSWorkspace sharedWorkspace] openURL:url.URL];
+}
+
+@end
 
 #pragma mark - Typing detection
 
 %hook IMChatRegistry
 
-- (void)_processMessageForAccount:(id)account chat:(id)chat style:(unsigned char)style chatProperties:(id)properties message:(FZMessage *)message {
+- (void)_processMessageForAccount:(id)account chat:(IMChat *)chat style:(unsigned char)style chatProperties:(id)properties message:(FZMessage *)message {
 	%orig;
 
 	if (message.flags == (IMMessageItemFlags)4104) {
 		typingIndicators++;
 
-		HBTSSetStatus(HBTSStatusBarTypeTyping, message.handle);
+		setStatus(HBTSStatusBarTypeTyping, message.handle, chat.guid);
 
 		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kHBTSTypingTimeout * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-			HBTSSetStatus(HBTSStatusBarTypeEmpty, nil);
+			setStatus(HBTSStatusBarTypeEmpty, nil, nil);
 		});
 	} else {
 		if (typingIndicators == 0) {
@@ -114,27 +139,30 @@ static void setStatus(HBTSStatusBarType type, NSString *handle) {
 		typingIndicators--;
 
 		if (typingIndicators == 0) {
-			HBTSSetStatus(HBTSStatusBarTypeEmpty, nil);
+			setStatus(HBTSStatusBarTypeEmpty, nil, nil);
 		}
 	}
 }
 
-- (void)_account:(id)arg1 chat:(id)arg2 style:(unsigned char)arg3 chatProperties:(id)arg4 messagesUpdated:(NSArray <FZMessage *> *)messages {
+- (void)_account:(id)account chat:(IMChat *)chat style:(unsigned char)style chatProperties:(id)properties messagesUpdated:(NSArray <FZMessage *> *)messages {
 	%orig;
 
 	BOOL hasRead = NO;
 
+	// loop over the updated messages. if we see one that isRead and hasn’t yet been seen, add it to
+	// our set and show an alert
 	for (FZMessage *message in messages) {
 		if (message.isRead && ![acknowledgedReadReceipts containsObject:message.guid]) {
 			hasRead = YES;
 			[acknowledgedReadReceipts addObject:message.guid];
-			HBTSSetStatus(HBTSStatusBarTypeRead, message.handle);
+			setStatus(HBTSStatusBarTypeRead, message.handle, chat.guid);
 		}
 	}
 
+	// if we got one, do our timeout to unset the alert
 	if (hasRead) {
 		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)([userDefaults doubleForKey:kHBTSPreferencesDurationKey] * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-			HBTSSetStatus(HBTSStatusBarTypeEmpty, nil);
+			setStatus(HBTSStatusBarTypeEmpty, nil, nil);
 		});
 	}
 }
@@ -197,6 +225,7 @@ static void checkUpdate() {
 
 	bundle = [NSBundle bundleWithIdentifier:@"ws.hbang.typestatus.mac"];
 	acknowledgedReadReceipts = [NSMutableSet set];
+	currentSenderGUID = nil;
 
 	userDefaults = [[NSUserDefaults alloc] initWithSuiteName:kHBTSPreferencesSuiteName];
 	[userDefaults registerDefaults:@{
@@ -205,6 +234,8 @@ static void checkUpdate() {
 	}];
 
 	statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
+	statusItem.button.target = HBTSStatusBarHandler.class;
+	statusItem.button.action = @selector(statusBarItemClicked);
 
 	if (![userDefaults objectForKey:kHBTSPreferencesLastVersionKey]) {
 		showFirstRunAlert();
